@@ -826,7 +826,7 @@
     $('sumMeta').textContent = [$('mCaseId').value.trim() || 'IDなし', side, cat + au, $('mTiming').value.trim(), $('mDate').value].filter(Boolean).join('・');
     $('catInfo').innerHTML = S.autoCat ? (S.autoCat.kind === 'none' ? '<span class="catauto">自動判定</span> 人工関節は見つかりませんでした'
       : `<span class="catauto ${S.autoCat.conf}">自動判定</span> 金属を検出 → ${CAT[S.autoCat.kind]}（${confText(S.autoCat.conf)}）`) : '';
-    const g = readGrades(), gs = Object.entries(g).filter(([, v]) => v).map(([k, v]) => `${k[0].toUpperCase() + k.slice(1)} ${v}`);
+    const g = readGrades(), gs = GRADES.filter((id) => g[id.slice(1).toLowerCase()]).map((id) => `${$(id).parentElement.querySelector('label').textContent} ${g[id.slice(1).toLowerCase()]}`);
     $('sumGrade').textContent = gs.join('・');
     const c = S.calc;
     $('sumCal').textContent = c && c.mmpx ? `${c.mmpx.toFixed(4)} mm/px` : '未較正（px）';
@@ -1090,7 +1090,7 @@
       if (h.startsWith('g_')) { if (o[h]) r.grades[h.slice(2)] = o[h]; continue; }
       const m = h.match(/^(.+)_([uv])$/);
       if (m && lmDef(m[1])) { if (o[h] !== '') { const p = r.landmarks[m[1]] = r.landmarks[m[1]] || {}; p[m[2] === 'u' ? 'x' : 'y'] = +o[h]; } continue; }
-      if (['hamada', 'samilson', 'walch', 'favard', 'sirveaux', 'neer'].includes(h)) { if (o[h]) r.grades[h] = o[h]; continue; }
+      if (GRADES.some((id) => id.slice(1).toLowerCase() === h)) { if (o[h]) r.grades[h] = o[h]; continue; }
       if (num(o[h]) != null) r.results[h] = num(o[h]);
     }
     return r;
@@ -1349,7 +1349,7 @@
   };
 
   // ---- 目視分類 ----
-  const GRADES = ['gHamada', 'gSamilson', 'gWalch', 'gFavard', 'gSirveaux', 'gNeer'];
+  const GRADES = ['gHamada', 'gSamilson', 'gWalch', 'gFavard', 'gSirveaux', 'gNeer', 'gLevy', 'gLazarus', 'gShield', 'gGartner'];
   const readGrades = () => Object.fromEntries(GRADES.map((id) => [id.slice(1).toLowerCase(), $(id).value]));
   const writeGrades = (g) => GRADES.forEach((id) => { $(id).value = g[id.slice(1).toLowerCase()] || ''; });
   GRADES.forEach((id) => $(id).addEventListener('change', renderSummaries));

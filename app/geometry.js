@@ -19,7 +19,7 @@
     { id: 'neck_s', group: '上腕骨頭', kind: 'pt', label: '解剖頚 上端', hint: '関節面と大結節の境目' },
     { id: 'neck_i', group: '上腕骨頭', kind: 'pt', label: '解剖頚 下端', hint: '関節面と内側 calcar の境目' },
     { id: 'gt_l', group: '上腕骨', kind: 'pt', label: '大結節 最外側点', hint: '大結節外側面の最も外側の点。LSA・DSA・肩峰指数・回転中心からの距離に使う' },
-    { id: 'gt_s', group: '上腕骨', kind: 'pt', label: '大結節 頂部', hint: '大結節の最も頭側の点。上腕骨側の下方化（回転中心から骨軸方向に何 mm 下か）に使う' },
+    { id: 'gt_s', group: '上腕骨', kind: 'pt', label: '大結節 頂部', hint: '大結節の最も頭側の点。上腕骨側の下方化（回転中心から骨軸方向に何 mm 下か）と HHH（骨頭頂部との高さの差）に使う' },
     { id: 'shaft', group: '上腕骨', kind: 'pairs', label: '骨幹 皮質（骨軸）', hint: '同じ高さで外側皮質→内側皮質を1組。近位と遠位で2組以上（外科頚より遠位）' },
     { id: 'delt', group: '上腕骨', kind: 'pt', label: '三角筋粗面 遠位端', hint: '三角筋粗面の最も遠位（末梢）の端。外側皮質の隆起が骨幹の輪郭に戻るところ。腕の長さ（肩峰外側端からの距離）用、写っていなければ空欄' },
     { id: 'sphere', group: 'インプラント', kind: 'circle', label: 'Glenosphere 輪郭（円）', hint: 'RSA術後：glenosphere の外縁を3点以上', cats: ['RSA'] },
@@ -283,6 +283,12 @@
         { lines: [axis], segs: [[head.c, foot(head.c, shaft.c, shaft.d)]], pts: [head.c] });
       if (P('gt_l')) push('上腕骨', 'gt_off', '大結節の外方オフセット（骨軸から）', L(latFromShaft(P('gt_l'))), unit, '',
         { lines: [axis], segs: [[P('gt_l'), foot(P('gt_l'), shaft.c, shaft.d)]] });
+      if (head && P('gt_s')) {
+        // HHH：骨頭頂部（骨軸方向で最も近位）が大結節頂部より何 mm 近位にあるか
+        const top = sub(head.c, mul(shaft.dd, head.r)), hhh = dot(sub(P('gt_s'), top), shaft.dd), lvl = add(top, mul(shaft.dd, hhh));
+        push('上腕骨', 'HHH', '骨頭頂部−大結節頂部の高さ（HHH）', L(hhh), unit, '骨軸方向、骨頭が高い +／大結節が上なら −',
+          { circles: [head], segs: [[top, lvl], [lvl, P('gt_s')]], pts: [top, P('gt_s')] });
+      }
     }
     if (head) push('上腕骨', 'head_d', '骨頭径', L(2 * head.r), unit, '', { circles: [head], segs: [[sub(head.c, { x: head.r, y: 0 }), add(head.c, { x: head.r, y: 0 })]] });
 

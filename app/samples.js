@@ -86,6 +86,54 @@
     return s;
   }
 
+  // ---- Levy（RSA 後の肩峰・肩甲棘の疲労骨折）：骨折線の位置。鎖骨は肩鎖関節の目印 ----
+  function levy(type) {
+    let s = rsa(0) + `<path d="M0,22 L96,26 L98,36 L0,34 Z" fill="${BONE}" stroke="${EDGE}" stroke-width="1.5"/>` + note(4, 18, '鎖骨');
+    const x = { I: 152, II: 104, III: 64 }[type];
+    if (x) s += `<path d="M${x},28 L${x + 4},40 L${x - 2},46 L${x + 6},56" stroke="#ff6b6b" stroke-width="3" fill="none"/>` + arrow(x + 20, 76, x + 6, 58);
+    return s;
+  }
+
+  // ---- Lazarus（関節窩コンポーネントの透亮線）：3本ペグ。full＝全周、part＝一部 ----
+  function lazarus({ full = [], part = [], loose = false } = {}) {
+    let s = scapula({ top: 86, bot: 86, bow: 0 }) + humerus({ cx: 136, cy: 110, r: 34, gt: true }) + acromion({ y: 52, cx: 136 });
+    s += `<path d="M138,78 A32,32 0 0 0 138,142 L132,142 L132,78 Z" fill="${IMP}"/>`; // 骨頭コンポーネント
+    s += `<g transform="${loose ? 'rotate(-14 86 110) translate(4,8)' : ''}">`;
+    [92, 110, 128].forEach((y, i) => {
+      if (full.includes(i)) s += `<rect x="54" y="${y - 6}" width="34" height="12" rx="3" fill="${BG}" stroke="#ff6b6b" stroke-width="1" stroke-dasharray="2 2"/>`;
+      if (part.includes(i)) s += `<path d="M56,${y - 5} L88,${y - 5}" stroke="#ff6b6b" stroke-width="2.5"/>`;
+      s += `<rect x="58" y="${y - 3}" width="28" height="6" fill="${POLY}"/>`;
+    });
+    s += `<path d="M86,78 Q100,110 86,142 L92,142 Q106,110 92,78 Z" fill="${POLY}" stroke="#bfae7a"/></g>`;
+    return s;
+  }
+
+  // ---- Stress shielding（非セメントステム周囲の骨吸収） ----
+  function shield(grade) {
+    let s = scapula({ top: 86, bot: 86, bow: 0 }) + acromion({ y: 50, cx: 134 });
+    // 頚部の骨切り線（108,122）−（152,88）の上に人工骨頭、下に骨幹と大結節
+    s += `<path d="M108,122 Q104,160 110,200 L150,200 Q150,160 158,116 L152,88 Z" fill="${BONE}" stroke="${EDGE}" stroke-width="1.5"/>`;
+    s += `<ellipse cx="162" cy="98" rx="11" ry="17" fill="${BONE}" stroke="${EDGE}" stroke-width="1.5"/>`;
+    s += `<path d="M126,110 L140,104 L136,190 L130,190 Z" fill="${IMP}"/>`; // ステム
+    s += `<path d="M108,122 A28,28 0 0 1 152,88 Z" fill="${IMP}" stroke="#dfe7ef" stroke-width="1"/>`;
+    const hole = (d) => `<path d="${d}" fill="${BG}" stroke="#ff6b6b" stroke-width="1" stroke-dasharray="2 2"/>`;
+    if (grade >= 1) s += hole('M162,86 Q172,98 164,112 Q155,100 162,86 Z'); // 大結節
+    if (grade >= 2) s += hole('M109,126 Q118,140 112,156 Q105,140 109,126 Z'); // 内側 calcar
+    if (grade >= 3) s += hole('M157,118 Q156,140 152,160 Q149,140 152,120 Z') + hole('M107,158 Q112,176 110,192 Q104,176 107,158 Z'); // 骨幹皮質
+    return s;
+  }
+
+  // ---- Gärtner（石灰沈着の形） ----
+  function gartner(type) {
+    let s = `<defs><filter id="gblur"><feGaussianBlur stdDeviation="${type === 'III' ? 4 : 1.6}"/></filter></defs>`;
+    s += scapula() + humerus() + acromion();
+    const c = 'cx="150" cy="70" rx="15" ry="8"';
+    if (type === 'I') s += `<ellipse ${c} fill="#ffffff" stroke="#ffffff" stroke-width="1.5"/>`;
+    if (type === 'II') s += `<ellipse ${c} fill="#ffffff" opacity=".85" filter="url(#gblur)"/>`;
+    if (type === 'III') s += `<ellipse cx="150" cy="70" rx="18" ry="10" fill="#ffffff" opacity=".45" filter="url(#gblur)"/>`;
+    return s + note(124, 22, '石灰沈着');
+  }
+
   // ---- 軸位像（Walch 用）：上＝前方、下＝後方、右＝外側 ----
   // ant/post：関節窩の前縁・後縁、ridge：二重凹面の稜（なければ単一凹面）、bow：くぼみの深さ
   function axial({ ant = [82, 62], post = [82, 138], ridge = null, bow = 8, head = [122, 100], r = 34, sclerosis = false, osteo = false } = {}) {
@@ -173,6 +221,47 @@
         ['2', '2-part：1 つの骨片が転位（図は外科頚）', () => neer(2)],
         ['3', '3-part：2 つの骨片が転位（外科頚＋大結節）', () => neer(3)],
         ['4', '4-part：骨頭・大結節・小結節がすべて分離', () => neer(4)],
+      ],
+    },
+    levy: {
+      title: 'Levy 分類（RSA 後の肩峰・肩甲棘の疲労骨折）',
+      note: '骨折線の位置＝三角筋起始のどこまでを含むか（Levy 2013）。正面像で見えない骨折は CT が必要（約2割）',
+      grades: [
+        ['0', '骨折なし', () => levy('0')],
+        ['I', '前部・中部三角筋起始の一部を含む（肩峰の外側寄り）', () => levy('I')],
+        ['II', '中部三角筋起始の全部と後部の一部を含む（肩鎖関節の高さ付近）', () => levy('II')],
+        ['III', '中部・後部三角筋起始の全部を含む（肩甲棘の骨折）', () => levy('III')],
+      ],
+    },
+    lazarus: {
+      title: 'Lazarus 分類（関節窩コンポーネント周囲の透亮線）',
+      note: 'ペグ型コンポーネントの透亮線（Lazarus 1999）。赤＝透亮線。図は正面像の模式',
+      grades: [
+        ['0', '透亮線なし', () => lazarus()],
+        ['1', '1〜2本のペグに不完全な透亮線', () => lazarus({ part: [0] })],
+        ['2', '1本のペグの全周に透亮線（他のペグに不完全なものがあってもよい）', () => lazarus({ full: [1], part: [0] })],
+        ['3', '2本以上のペグの全周に透亮線', () => lazarus({ full: [0, 1] })],
+        ['4', 'すべてのペグの全周に透亮線', () => lazarus({ full: [0, 1, 2] })],
+        ['5', '明らかな弛み（コンポーネントの移動・傾き）', () => lazarus({ full: [0, 1, 2], loose: true })],
+      ],
+    },
+    shield: {
+      title: 'Stress shielding（非セメントステム周囲の骨吸収）',
+      note: 'このアプリでの程度の目安。部位（大結節・内側 calcar・骨幹皮質）は「メモ」に記録してください（記載の推奨は Denard 2018）',
+      grades: [
+        ['0', 'なし', () => shield(0)],
+        ['1', '軽度：大結節 または 内側 calcar の一部に皮質の菲薄化・骨吸収', () => shield(1)],
+        ['2', '中等度：大結節と内側 calcar の両方、または一部の完全な骨吸収', () => shield(2)],
+        ['3', '高度：大結節・calcar の完全な吸収や骨幹皮質の広い菲薄化', () => shield(3)],
+      ],
+    },
+    gartner: {
+      title: 'Gärtner 分類（石灰沈着性腱板炎）',
+      note: '石灰の濃さと輪郭で判定（Gärtner・Heyer 1995）。III 型は吸収期のことが多い',
+      grades: [
+        ['I', '輪郭が明瞭で濃い（均一）', () => gartner('I')],
+        ['II', '輪郭が不明瞭で濃い、または輪郭は明瞭で淡い', () => gartner('II')],
+        ['III', '淡く雲状で輪郭がはっきりしない', () => gartner('III')],
       ],
     },
   };
