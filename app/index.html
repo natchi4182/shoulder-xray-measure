@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>肩X線計測</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e1116">
+<link rel="icon" href="icon-192.png">
+</head>
+<body>
+<header class="topbar">
+  <h1>肩X線計測 <span class="ver">v1.0</span></h1>
+  <div class="import">
+    <div class="dd">
+      <button class="btn ddbtn">取り込み ▾</button>
+      <div class="ddmenu" hidden>
+        <button class="btn" id="btnPhotos" hidden>写真ライブラリ</button>
+        <label class="btn">カメラで撮影<input id="camInput" type="file" accept="image/*" capture="environment" hidden></label>
+        <label class="btn">ファイル<input id="fileInput" type="file" accept="image/*" hidden></label>
+        <button class="btn" id="btnPasteHelp" title="⌘V でクリップボードの画像を貼り付け">貼り付け ⌘V</button>
+        <button class="btn" id="btnUrl">URL から</button>
+      </div>
+    </div>
+    <button class="btn" id="btnKeystone" title="スマホで撮った画像のゆがみを直す">台形補正</button>
+    <div class="dd adj">
+      <button class="btn ddbtn">調整 ▾</button>
+      <div class="ddmenu adjust" hidden data-keep>
+        <div class="row">
+          <button class="btn" id="btnRotL" title="左に90°">⟲ 左90°</button>
+          <button class="btn" id="btnRotR" title="右に90°">⟳ 右90°</button>
+          <button class="btn" id="btnFlip" title="左右反転">⇋ 左右</button>
+        </div>
+        <label class="slider">明るさ<input id="bright" type="range" min="40" max="220" value="100"></label>
+        <label class="slider">コントラスト<input id="contrast" type="range" min="40" max="300" value="100"></label>
+        <button class="btn" id="btnInvert">白黒反転</button>
+      </div>
+    </div>
+    <button class="btn" id="btnFit">全体</button>
+    <button class="btn primary" id="btnSave">保存</button>
+    <div class="dd">
+      <button class="btn ddbtn" title="その他">⋯</button>
+      <div class="ddmenu right" hidden>
+        <button class="btn" id="btnNew">新規</button>
+        <button class="btn" id="btnCases">データ一覧</button>
+        <button class="btn" id="btnDash">統計ダッシュボード</button>
+        <button class="btn" id="btnHelp">使い方</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <aside class="panel left">
+    <details class="sec meta" id="secMeta" open>
+      <summary><h2>症例情報</h2><span class="sum" id="sumMeta"></span></summary>
+      <div class="row"><label>症例ID</label><input id="mCaseId" placeholder="匿名ID（氏名は入れない）"></div>
+      <div class="row"><label>側</label>
+        <select id="mSide"><option value="">—</option><option value="R">右</option><option value="L">左</option></select>
+        <label>撮影日</label><input id="mDate" type="date">
+      </div>
+      <div class="row"><label>分類</label>
+        <select id="mCategory">
+          <option value="normal">正常</option>
+          <option value="OA">OA（変形性肩関節症）</option>
+          <option value="CTA">腱板断裂・CTA</option>
+          <option value="RSA">RSA 術後</option>
+          <option value="TSA">TSA/HHR 術後</option>
+          <option value="fracture">骨折</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div class="row"><label>撮影</label>
+        <select id="mView">
+          <option value="grashey">正面（Grashey）</option>
+          <option value="ap">正面（AP）</option>
+          <option value="axillary">軸位（腋窩撮影）</option>
+          <option value="yview">Scapular Y</option>
+          <option value="ct">CT（スライス・再構成）</option>
+          <option value="other">その他</option>
+        </select>
+      </div>
+      <div class="row"><label>時期</label><input id="mTiming" placeholder="術前 / 術直後 / 1年 など"></div>
+      <div class="row"><label>メモ</label><input id="mNote"></div>
+      <div class="row"><label>基準症例</label><select id="mRef"><option value="">なし</option></select></div>
+      <p class="hint" id="catInfo"></p>
+      <p class="hint" id="refInfo"></p>
+    </details>
+
+    <details class="sec" id="secLm" open>
+      <summary><h2>ランドマーク <small id="lmCount"></small></h2><span class="sum" id="sumLm"></span></summary>
+      <p class="hint" id="activeHint">画像を読み込んでから、項目を選んで画像上をタップ</p>
+      <div id="lmList"></div>
+      <div class="lmtools">
+        <button class="btn small" id="btnUndoPt">最後の点を消す</button>
+        <button class="btn small" id="btnClearLm">この項目を消す</button>
+        <button class="btn small" id="btnNextLm">次へ ▸</button>
+      </div>
+      <p class="hint">「自動」：骨頭・glenosphere・ピラー線は押してから画像をタップ。点があれば押すだけでやり直し。SFL は2点を置いてから押すと線に合わせます</p>
+      <div class="row band">
+        <label>ピラー帯</label>SFLから下へ<input id="bandStart" type="number" value="40" step="5">〜＋<input id="bandLen" type="number" value="30" step="5">mm
+      </div>
+      <p class="hint">帯は較正後に点線で表示（目安。実画像で調整予定）</p>
+    </details>
+
+    <details class="sec" id="secGrade">
+      <summary><h2>目視分類</h2><span class="sum" id="sumGrade"></span></summary>
+      <div class="row"><label>Hamada</label><select id="gHamada"><option value="">—</option><option>1</option><option>2</option><option>3</option><option>4a</option><option>4b</option><option>5</option></select></div>
+      <div class="row"><label>Samilson</label><select id="gSamilson"><option value="">—</option><option value="0">0</option><option value="1">1（下方骨棘 &lt;3mm）</option><option value="2">2（3〜7mm）</option><option value="3">3（&gt;7mm）</option></select></div>
+      <div class="row"><label>Walch</label><select id="gWalch"><option value="">—</option><option>A1</option><option>A2</option><option>B1</option><option>B2</option><option>B3</option><option>C1</option><option>C2</option><option>D</option></select></div>
+      <div class="row"><label>Favard</label><select id="gFavard"><option value="">—</option><option>E0</option><option>E1</option><option>E2</option><option>E3</option><option>E4</option></select></div>
+      <div class="row"><label>Sirveaux</label><select id="gSirveaux"><option value="">—</option><option value="0">0（ノッチングなし）</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></div>
+      <div class="row"><label>Neer</label><select id="gNeer"><option value="">—</option><option value="1">1-part</option><option value="2">2-part</option><option value="3">3-part</option><option value="4">4-part</option></select></div>
+    </details>
+
+    <details class="sec" id="secCal" open>
+      <summary><h2>較正（mm換算）</h2><span class="sum" id="sumCal"></span></summary>
+      <div class="row">
+        <select id="calMode">
+          <option value="none">なし（px）</option>
+          <option value="sphere">Glenosphere 径から</option>
+          <option value="twoPoint">2点間の既知距離</option>
+          <option value="mmpx">mm/px 直接入力</option>
+        </select>
+        <input id="calValue" type="number" step="0.01" placeholder="mm" style="width:6em">
+      </div>
+      <p class="hint" id="calInfo"></p>
+    </details>
+  </aside>
+
+  <section class="stage">
+    <canvas id="cv"></canvas>
+    <canvas id="loupe" width="180" height="180"></canvas>
+    <div class="kbar" id="kbar" hidden>
+      <span id="kMsg"></span>
+      <label>縦横比（幅:高さ）<input id="kAspect" placeholder="自動 / 35:43 など"></label>
+      <button class="btn small" id="kRedo" hidden>手で置き直す</button>
+      <button class="btn small" id="kCancel">キャンセル</button>
+      <button class="btn small primary" id="kApply" disabled>適用</button>
+    </div>
+    <div class="empty" id="emptyMsg">
+      <p>X線画像をここにドロップ／⌘V で貼り付け／上の「取り込み」から読み込み</p>
+      <p class="hint">画像はこの端末内だけに保存され、外部へは送信されません（iPhone・iPad では数値だけをご自身の iCloud で共有）。<br>氏名などが写っている場合は切り取ってから取り込んでください。</p>
+      <p class="hint">研究・教育用の計測ツールです。診断や治療方針の決定には使わないでください。</p>
+    </div>
+    <div class="viewopts">
+      <label><input type="checkbox" id="optAxes" checked>座標軸</label>
+      <label><input type="checkbox" id="optAngles" checked>角度線</label>
+      <label><input type="checkbox" id="optLabels" checked>ラベル</label>
+      <label><input type="checkbox" id="optCor" checked>回転中心の軸</label>
+      <label><input type="checkbox" id="optCorOnly">軸だけ表示</label>
+      <label><input type="checkbox" id="optAltFrame">旧原点(SFL×関節窩線)</label>
+    </div>
+  </section>
+
+  <aside class="panel right">
+    <h2>計測結果</h2>
+    <div id="results"></div>
+    <h2>座標系</h2>
+    <div id="frameInfo" class="hint"></div>
+  </aside>
+</main>
+
+<dialog id="dlgCases" class="wide">
+  <div class="dlghead">
+    <h2>データ一覧 <small id="caseCount"></small></h2>
+    <input id="caseFilter" placeholder="ID・分類・時期・メモ・入力者で絞り込み">
+    <button class="btn small" id="btnExportCsv">一覧表（CSV）をダウンロード</button>
+    <label class="btn small">他の人の一覧表を読み込む<input id="importFile" type="file" accept=".csv,text/csv,application/json,.json" hidden></label>
+    <button class="btn small" id="btnExportJson">バックアップ（画像つき JSON）</button>
+    <button class="btn small" id="btnCloseCases">閉じる</button>
+  </div>
+  <div class="syncbar">
+    <span id="syncStatus"></span>
+    <button class="btn small" id="btnSyncNow">今すぐ同期</button>
+    <label>この端末の名前<input id="setDevName" placeholder="例：外来 iPad"></label>
+    <label>入力者<input id="setAuthor" placeholder="イニシャルなど"></label>
+    <label class="chk"><input type="checkbox" id="setIcloud">iCloud で数値を共有</label>
+  </div>
+  <p class="hint">数値・点の座標・症例情報は iCloud（ご自身の Apple ID）で同じ Apple ID の端末と共有されます。画像は撮影・取り込みをした端末の中だけに残り、iCloud にもほかの端末にも送られません。「画像の所在」でどの端末に画像があるか分かります。</p>
+  <div class="tblwrap"><table class="dtable" id="caseTable"></table></div>
+</dialog>
+
+<dialog id="dlgDash" class="wide">
+  <div class="dlghead">
+    <h2>統計ダッシュボード</h2>
+    <button class="btn small" id="btnDashCsv">集計表（CSV）</button>
+    <button class="btn small" id="btnCloseDash">閉じる</button>
+  </div>
+  <div class="dfilters">
+    <div id="dCats" class="chips"></div>
+    <label>側<select id="dSide"><option value="">両方</option><option value="R">右</option><option value="L">左</option></select></label>
+    <label>撮影<select id="dView"><option value="">すべて</option></select></label>
+    <label>時期<input id="dTiming" placeholder="例：術前"></label>
+    <label>分け方<select id="dGroup"><option value="category">分類</option><option value="timing">時期</option><option value="side">側</option><option value="author">入力者</option><option value="">分けない</option></select></label>
+  </div>
+  <div class="dmain">
+    <div class="dcol">
+      <div class="drow"><label>項目<select id="dMeasure"></select></label></div>
+      <div id="dChart" class="dchart"></div>
+      <div id="dGroups"></div>
+      <div class="drow"><label>相関（横軸を上の項目、縦軸を）<select id="dMeasureY"><option value="">選ばない</option></select></label></div>
+      <div id="dScatter" class="dchart"></div>
+    </div>
+    <div class="dcol">
+      <h3>全項目の要約 <small id="dN"></small></h3>
+      <div class="tblwrap"><table class="dtable" id="dSummary"></table></div>
+    </div>
+  </div>
+  <div id="dTip" class="dtip" hidden></div>
+  <p class="hint">値は保存された点から今の計算式で計算し直しています（点がない取り込みデータは保存時の値）。単位が mm でない症例（未較正）は長さの集計から除きます。</p>
+</dialog>
+
+<dialog id="dlgUrl">
+  <h2>URL から画像を取り込む</h2>
+  <input id="urlInput" type="url" placeholder="https://… (画像のURL)" style="width:100%">
+  <p class="hint">サイトによっては直接取得が拒否されます。その場合は画像を右クリック→「画像をコピー」して ⌘V、または画像をこの画面へドラッグしてください。</p>
+  <div class="dlgbtns"><button class="btn" id="btnUrlCancel">キャンセル</button><button class="btn primary" id="btnUrlGo">取り込む</button></div>
+</dialog>
+
+<dialog id="dlgAsk" class="ask">
+  <p id="askMsg"></p>
+  <div class="dlgbtns"><button class="btn" id="askCancel">キャンセル</button><button class="btn primary" id="askOk">OK</button></div>
+</dialog>
+
+<dialog id="dlgGuide">
+  <div class="dlghead"><h2 id="guideTitle"></h2><button class="btn small" id="btnCloseGuide">閉じる</button></div>
+  <p class="hint" id="guideNote"></p>
+  <div id="guideCards" class="gcards"></div>
+  <p class="hint">模式図は説明用の自作図です。判定は原著の定義に従ってください。下段にはこの端末に保存した症例のうち、そのグレードに分類したものが表示されます。</p>
+</dialog>
+
+<dialog id="dlgHelp" class="help">
+  <div class="dlghead"><h2>使い方</h2><button class="btn small" id="btnCloseHelp">閉じる</button></div>
+  <iframe id="helpFrame" title="使い方"></iframe>
+</dialog>
+
+<div id="toast"></div>
+<script>
+// 予期しないエラーを画面に出す（テスターからの報告用）
+(function () {
+  const show = (m) => { let b = document.getElementById('errbox'); if (!b) { b = document.createElement('div'); b.id = 'errbox'; b.onclick = () => b.remove(); document.body.appendChild(b); } b.textContent = 'エラー（この表示をスクリーンショットで送ってください）：' + m; };
+  addEventListener('error', (e) => show(`${e.message} @${(e.filename || '').split('/').pop()}:${e.lineno}`));
+  addEventListener('unhandledrejection', (e) => show(String(e.reason && (e.reason.stack || e.reason.message) || e.reason)));
+})();
+</script>
+<script src="geometry.js"></script>
+<script src="samples.js"></script>
+<script src="autodetect.js"></script>
+<script src="app.js"></script>
+<script>
+// オフラインで開けるようにする。データはこの PC のブラウザ内だけにあるので、消されにくいよう永続化を頼む
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+</script>
+</body>
+</html>
