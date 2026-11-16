@@ -790,7 +790,7 @@
     if (!visibleLandmarks().some((d) => d.id === S.active)) S.active = primaryIds()[0];
     refresh();
   };
-  ['mCaseId', 'mSide', 'mDate', 'mView', 'mTiming', 'mNote'].forEach((id) => $(id).addEventListener('input', renderSummaries));
+  ['mCaseId', 'mSide', 'mDate', 'mView', 'mTiming', 'mNote', 'mAge', 'mSex', 'mHeight', 'mOpDate'].forEach((id) => $(id).addEventListener('input', renderSummaries));
 
   // ---- 人工関節の自動判定（読み込み・台形補正のあと）：分類を RSA／TSA に。手で選んだ分類は変えない ----
   function checkImplant() {
@@ -808,6 +808,7 @@
 
   // ---- 左パネルの折りたたみ：開閉は覚えておき、たたんだときは見出しに中身の要約を出す ----
   const SECS = ['secMeta', 'secLm', 'secGrade', 'secCal'];
+  const numOrNull = (v) => { v = String(v ?? '').trim(); return v === '' || !Number.isFinite(+v) ? null : +v; };
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch { /* 保存できない環境 */ } };
   SECS.forEach((id) => {
@@ -823,7 +824,8 @@
     const side = { R: '右', L: '左' }[$('mSide').value] || '';
     const cat = CAT[$('mCategory').value] || '';
     const au = S.autoCat && S.autoCat.kind !== 'none' ? '（自動）' : '';
-    $('sumMeta').textContent = [$('mCaseId').value.trim() || 'IDなし', side, cat + au, $('mTiming').value.trim(), $('mDate').value].filter(Boolean).join('・');
+    const age = $('mAge').value.trim(), sex = { M: '男', F: '女' }[$('mSex').value] || '';
+    $('sumMeta').textContent = [$('mCaseId').value.trim() || 'IDなし', side, (age ? age + '歳' : '') + sex, cat + au, $('mTiming').value.trim(), $('mDate').value].filter(Boolean).join('・');
     $('catInfo').innerHTML = S.autoCat ? (S.autoCat.kind === 'none' ? '<span class="catauto">自動判定</span> 人工関節は見つかりませんでした'
       : `<span class="catauto ${S.autoCat.conf}">自動判定</span> 金属を検出 → ${CAT[S.autoCat.kind]}（${confText(S.autoCat.conf)}）`) : '';
     const g = readGrades(), gs = GRADES.filter((id) => g[id.slice(1).toLowerCase()]).map((id) => `${$(id).parentElement.querySelector('label').textContent} ${g[id.slice(1).toLowerCase()]}`);
@@ -839,6 +841,7 @@
     S.lm = {}; S.auto = {}; S.trace = {}; S.armed = null; S.sel = null; S.caseKey = null; S.active = primaryIds()[0]; S.sourceUrl = ''; S.savedLm = '{}'; S.keystoned = false; S.catManual = false; S.autoCat = null;
     $('mCaseId').value = ''; $('mNote').value = ''; $('mTiming').value = ''; $('mSide').value = '';
     $('mDate').value = ''; $('mView').value = 'grashey';
+    $('mAge').value = ''; $('mSex').value = ''; $('mHeight').value = ''; $('mOpDate').value = '';
     S.ref = null; writeGrades({}); fillRefSelect();
   }
   function imgBlob(c, type = 'image/jpeg', q = 0.92) { return new Promise((r) => c.toBlob(r, type, q)); }
@@ -861,6 +864,7 @@
     const rec = {
       caseId: $('mCaseId').value.trim(), side: $('mSide').value, date: $('mDate').value,
       category: $('mCategory').value, view: $('mView').value, timing: $('mTiming').value.trim(), note: $('mNote').value.trim(),
+      age: numOrNull($('mAge').value), sex: $('mSex').value, heightCm: numOrNull($('mHeight').value), opDate: $('mOpDate').value,
       landmarks: JSON.parse(JSON.stringify(S.lm)), cal: calInput(),
       pillarBand: { start: parseFloat($('bandStart').value), len: parseFloat($('bandLen').value) },
       grades: readGrades(), refKey: S.ref ? S.ref.key : null, refSnap: S.ref ? S.ref.snap : null,
@@ -900,6 +904,7 @@
       S.savedLm = JSON.stringify(S.lm);
       $('mCaseId').value = rec.caseId || ''; $('mSide').value = rec.side || ''; $('mDate').value = rec.date || '';
       $('mCategory').value = rec.category || 'normal'; $('mView').value = rec.view || 'grashey'; $('mTiming').value = rec.timing || ''; $('mNote').value = rec.note || '';
+      $('mAge').value = rec.age ?? ''; $('mSex').value = rec.sex || ''; $('mHeight').value = rec.heightCm ?? ''; $('mOpDate').value = rec.opDate || '';
       $('calMode').value = rec.cal?.mode || 'none'; $('calValue').value = rec.cal?.value || '';
       if (rec.pillarBand) { $('bandStart').value = rec.pillarBand.start; $('bandLen').value = rec.pillarBand.len; }
       writeGrades(rec.grades || {});
@@ -932,16 +937,16 @@
     list.sort((a, b) => { const x = val(a), y = val(b); return (x < y ? -1 : x > y ? 1 : 0) * S.sort.dir; });
     $('caseCount').textContent = `${list.length} 件${q ? `（全 ${all.length} 件中）` : ''}`;
     const th = (k, t) => `<th class="sort" data-sort="${k}">${t}${S.sort.k === k ? (S.sort.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`;
-    const head = `<tr><th></th>${th('caseId', '症例ID')}${th('side', '側')}${th('date', '撮影日')}${th('category', '分類')}${th('timing', '時期')}${COLS.map(([k, t]) => th(k, t)).join('')}${th('where', '画像の所在')}${th('author', '入力者')}${th('updatedAt', '更新')}<th></th></tr>`;
+    const head = `<tr><th></th>${th('caseId', '症例ID')}${th('side', '側')}${th('age', '年齢')}${th('sex', '性別')}${th('date', '撮影日')}${th('category', '分類')}${th('timing', '時期')}${COLS.map(([k, t]) => th(k, t)).join('')}${th('where', '画像の所在')}${th('author', '入力者')}${th('updatedAt', '更新')}<th></th></tr>`;
     const rows = list.map((r) => {
       const R = r.results || {}, u = r.unit || 'px', w = whereList(r);
       const cells = COLS.map(([k, , uu]) => { const v = pickR(R, k); return `<td class="n">${v == null ? '' : fmt(v, uu) + (uu === 'u' ? (u === 'mm' ? '' : ' px') : '')}</td>`; }).join('');
       return `<tr><td>${r.thumb ? `<img src="${r.thumb}" alt="">` : '<span class="noimg">画像なし</span>'}</td>
-        <td>${esc(r.caseId || '(IDなし)')}</td><td>${{ R: '右', L: '左' }[r.side] || ''}</td><td>${r.date || ''}</td><td>${CAT[r.category] || ''}</td><td>${esc(r.timing || '')}</td>
+        <td>${esc(r.caseId || '(IDなし)')}</td><td>${{ R: '右', L: '左' }[r.side] || ''}</td><td class="n">${r.age ?? ''}</td><td>${{ M: '男', F: '女' }[r.sex] || ''}</td><td>${r.date || ''}</td><td>${CAT[r.category] || ''}</td><td>${esc(r.timing || '')}</td>
         ${cells}<td class="where ${r.image ? 'here' : ''}">${esc(whereText(r) || '—')}</td><td>${esc(r.origin && r.origin.author || '')}</td><td>${(r.updatedAt || '').slice(0, 10)}</td>
         <td>${r.image ? `<button class="btn tiny" data-open="${r.key}">開く</button> ` : ''}<button class="btn tiny danger" data-del="${r.key}">削除</button></td></tr>`;
     }).join('');
-    $('caseTable').innerHTML = head + (rows || `<tr><td colspan="${COLS.length + 11}" class="hint">保存された症例はありません</td></tr>`);
+    $('caseTable').innerHTML = head + (rows || `<tr><td colspan="${COLS.length + 13}" class="hint">保存された症例はありません</td></tr>`);
     $('caseTable').querySelectorAll('[data-sort]').forEach((t) => t.onclick = () => {
       S.sort = { k: t.dataset.sort, dir: S.sort.k === t.dataset.sort ? -S.sort.dir : (t.dataset.sort === 'updatedAt' ? -1 : 1) }; renderCases();
     });
@@ -1042,14 +1047,14 @@
   const csvQ = (v) => v == null ? '' : /[",\n\r]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v;
   const csvText = (rows) => '﻿' + rows.map((r) => r.map(csvQ).join(',')).join('\n');
   // 一覧表（CSV）：1行1症例。最後の record_json 列に点・較正などをすべて入れ、読み込んだ側で計算し直せるようにする（画像は入れない）
-  const META = ['uid', 'caseId', 'side', 'date', 'category', 'view', 'timing', 'note', 'author', 'device', 'imageAt', 'unit', 'mmpx', 'refUid', 'keystoned', 'updatedAt'];
+  const META = ['uid', 'caseId', 'side', 'date', 'age', 'sex', 'heightCm', 'opDate', 'category', 'view', 'timing', 'note', 'author', 'device', 'imageAt', 'unit', 'mmpx', 'refUid', 'keystoned', 'updatedAt'];
   $('btnExportCsv').onclick = async () => {
     const all = await DB.live();
     const rkeys = [...new Set(all.flatMap((r) => Object.keys(r.results || {})))];
     const lkeys = LM.filter((d) => d.kind === 'pt').map((d) => d.id);
     const gkeys = GRADES.map((id) => id.slice(1).toLowerCase());
     const head = [...META, ...gkeys.map((k) => 'g_' + k), ...rkeys, ...lkeys.flatMap((k) => [k + '_u', k + '_v']), 'record_json'];
-    const rows = all.map((r) => [r.uid, r.caseId, r.side, r.date, r.category, r.view, r.timing, r.note, r.origin && r.origin.author, r.origin && r.origin.deviceName,
+    const rows = all.map((r) => [r.uid, r.caseId, r.side, r.date, r.age, r.sex, r.heightCm, r.opDate, r.category, r.view, r.timing, r.note, r.origin && r.origin.author, r.origin && r.origin.deviceName,
       whereText(r), r.unit, r.mmpx, r.refUid, r.keystoned ? 1 : '', r.updatedAt,
       ...gkeys.map((k) => r.grades && r.grades[k]),
       ...rkeys.map((k) => r.results && r.results[k]),
@@ -1081,7 +1086,7 @@
   // record_json のない CSV（旧版・手で作った表）は列から組み立てる
   function recFromRow(o, head) {
     const num = (v) => v === '' || v == null || isNaN(+v) ? null : +v;
-    const r = { uid: o.uid || null, caseId: o.caseId || '', side: o.side || '', date: o.date || '', category: o.category || 'other', view: o.view || '',
+    const r = { uid: o.uid || null, caseId: o.caseId || '', side: o.side || '', date: o.date || '', age: num(o.age), sex: o.sex || '', heightCm: num(o.heightCm), opDate: o.opDate || '', category: o.category || 'other', view: o.view || '',
       timing: o.timing || '', note: o.note || '', unit: o.unit || '', mmpx: num(o.mmpx), keystoned: o.keystoned === '1', updatedAt: o.updatedAt || '',
       origin: { author: o.author || '', deviceName: o.device || '' }, grades: {}, results: {}, landmarks: {} };
     const skip = new Set([...META, 'key', 'refKey', 'record_json']);
@@ -1153,9 +1158,15 @@
       } catch (e) { console.warn(e); }
     }
     if (!ok) for (const [k, v] of Object.entries(r.results || {})) if (Number.isFinite(+v)) out[k] = { v: +v, unit: null, label: null, group: null };
+    // 症例情報の数値（相関・散布図に使う）
+    if (Number.isFinite(r.age)) out.age = { v: r.age, unit: '歳', label: '年齢', group: '症例情報' };
+    if (Number.isFinite(r.heightCm)) out.height_cm = { v: r.heightCm, unit: 'cm', label: '身長', group: '症例情報' };
+    const pm = postopMonths(r); if (pm != null) out.postop_m = { v: pm, unit: '月', label: '術後経過（撮影日−手術日）', group: '症例情報' };
     dashCache.set(ck, out);
     return out;
   }
+  // 撮影日−手術日（月）。術前の撮影は負
+  const postopMonths = (r) => { if (!r.date || !r.opDate) return null; const d = (new Date(r.date) - new Date(r.opDate)) / 864e5; return Number.isFinite(d) ? Math.round(d / 30.4375 * 10) / 10 : null; };
   const D = { recs: [], info: new Map() };
   const quant = (s, p) => { const i = (s.length - 1) * p, lo = Math.floor(i), hi = Math.ceil(i); return s[lo] + (s[hi] - s[lo]) * (i - lo); };
   function stats(vs) {
@@ -1234,7 +1245,8 @@
     return u === 'px' || (isLen(k) && u !== 'mm') ? null : m.v;
   };
   const unitOf = (rows, k) => isLen(k) ? 'mm' : ((D.info.get(k) || {}).unit || '');
-  const groupKey = (r, g) => g === 'category' ? (CAT[r.category] || r.category || '—') : g === 'side' ? ({ R: '右', L: '左' }[r.side] || '側なし') : g === 'author' ? (r.origin && r.origin.author || '入力者なし') : g === 'timing' ? (r.timing || '時期なし') : '全体';
+  const groupKey = (r, g) => g === 'category' ? (CAT[r.category] || r.category || '—') : g === 'side' ? ({ R: '右', L: '左' }[r.side] || '側なし') : g === 'author' ? (r.origin && r.origin.author || '入力者なし') : g === 'timing' ? (r.timing || '時期なし')
+    : g === 'sex' ? ({ M: '男', F: '女' }[r.sex] || '性別なし') : g === 'ageband' ? (Number.isFinite(r.age) ? `${Math.floor(r.age / 10) * 10}代` : '年齢なし') : '全体';
   function renderDash() {
     const rows = dashRows(), g = $('dGroup').value;
     $('dN').textContent = `${rows.length} 症例`;
@@ -1260,7 +1272,7 @@
     const unit = unitOf(rows, k);
     D.groups = { k, label: lab(k), unit, groups };
     $('dChart').innerHTML = stripPlot(groups, lab(k), unit);
-    $('dGroups').innerHTML = `<table class="dtable"><tr><th>${g ? { category: '分類', timing: '時期', side: '側', author: '入力者' }[g] : ''}</th><th>n</th><th>平均 ± SD</th><th>中央値 [IQR]</th><th>範囲</th></tr>` +
+    $('dGroups').innerHTML = `<table class="dtable"><tr><th>${g ? { category: '分類', timing: '時期', side: '側', author: '入力者', sex: '性別', ageband: '年代' }[g] : ''}</th><th>n</th><th>平均 ± SD</th><th>中央値 [IQR]</th><th>範囲</th></tr>` +
       groups.map((x) => `<tr><td>${esc(x.name)}</td><td class="n">${x.st.n}</td><td class="n">${f2(x.st.mean)} ± ${f2(x.st.sd)}</td><td class="n">${f2(x.st.med)} [${f2(x.st.q1)}–${f2(x.st.q3)}]</td><td class="n">${f2(x.st.min)}–${f2(x.st.max)}</td></tr>`).join('') +
       `</table><p class="hint">${testGroups(groups)}</p>`;
     const ky = $('dMeasureY').value;

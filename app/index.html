@@ -60,6 +60,12 @@
         <select id="mSide"><option value="">—</option><option value="R">右</option><option value="L">左</option></select>
         <label>撮影日</label><input id="mDate" type="date">
       </div>
+      <div class="row"><label>年齢</label><input id="mAge" type="number" min="0" max="120" step="1" inputmode="numeric" placeholder="歳">
+        <label>性別</label><select id="mSex"><option value="">—</option><option value="M">男</option><option value="F">女</option></select>
+      </div>
+      <div class="row"><label>身長</label><input id="mHeight" type="number" min="50" max="250" step="0.1" inputmode="decimal" placeholder="cm">
+        <label>手術日</label><input id="mOpDate" type="date">
+      </div>
       <div class="row"><label>分類</label>
         <select id="mCategory">
           <option value="normal">正常</option>
@@ -199,7 +205,7 @@
     <label>側<select id="dSide"><option value="">両方</option><option value="R">右</option><option value="L">左</option></select></label>
     <label>撮影<select id="dView"><option value="">すべて</option></select></label>
     <label>時期<input id="dTiming" placeholder="例：術前"></label>
-    <label>分け方<select id="dGroup"><option value="category">分類</option><option value="timing">時期</option><option value="side">側</option><option value="author">入力者</option><option value="">分けない</option></select></label>
+    <label>分け方<select id="dGroup"><option value="category">分類</option><option value="timing">時期</option><option value="side">側</option><option value="author">入力者</option><option value="sex">性別</option><option value="ageband">年代</option><option value="">分けない</option></select></label>
   </div>
   <div class="dmain">
     <div class="dcol">
