@@ -1416,6 +1416,7 @@
   }
   function updateKeystoneBar() {
     $('kbar').hidden = S.mode !== 'keystone';
+    document.querySelector('.viewopts').style.display = S.mode === 'keystone' ? 'none' : ''; // 下の隅の点を隠さない
     $('kMsg').textContent = S.kq.length < 4 ? `X線画像（フィルム／モニターの表示部分）の4隅をタップ：あと ${4 - S.kq.length} 点（縁の近くなら角に吸着します）`
       : S.kAuto ? '4隅を自動で見つけました。ずれていれば黄色の点をドラッグして直し「適用」' : '4隅を調整して「適用」';
     $('kApply').disabled = S.kq.length < 4;
@@ -1424,6 +1425,7 @@
   $('btnKeystone').onclick = () => {
     if (!S.img) return toast('画像がありません');
     S.mode = 'keystone'; S.kq = []; S.kAuto = false;
+    document.querySelector('.layout').scrollTop = 0; // 狭い画面：画像のすぐ下の操作欄が見えるように
     updateKeystoneBar(); $('kMsg').textContent = 'X線の範囲の4隅を探しています…'; draw();
     // 表示を先に出してから検出する（端末によっては1秒ほどかかる）
     setTimeout(() => {

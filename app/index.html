@@ -136,13 +136,6 @@
   <section class="stage">
     <canvas id="cv"></canvas>
     <canvas id="loupe" width="180" height="180"></canvas>
-    <div class="kbar" id="kbar" hidden>
-      <span id="kMsg"></span>
-      <label>縦横比（幅:高さ）<input id="kAspect" placeholder="自動 / 35:43 など"></label>
-      <button class="btn small" id="kRedo" hidden>手で置き直す</button>
-      <button class="btn small" id="kCancel">キャンセル</button>
-      <button class="btn small primary" id="kApply" disabled>適用</button>
-    </div>
     <div class="empty" id="emptyMsg">
       <p>X線画像をここにドロップ／⌘V で貼り付け／上の「取り込み」から読み込み</p>
       <p class="hint">画像はこの端末内だけに保存され、外部へは送信されません（iPhone・iPad では数値だけをご自身の iCloud で共有）。<br>氏名などが写っている場合は切り取ってから取り込んでください。</p>
@@ -157,6 +150,15 @@
       <label><input type="checkbox" id="optAltFrame">旧原点(SFL×関節窩線)</label>
     </div>
   </section>
+  <!-- 台形補正の操作欄：画像に重ねず、計測結果の欄（狭い画面では画像のすぐ下）に出す -->
+  <div class="kbar" id="kbar" hidden>
+    <b class="ktitle">台形補正</b>
+    <span id="kMsg"></span>
+    <label>縦横比（幅:高さ）<input id="kAspect" placeholder="自動 / 35:43 など"></label>
+    <button class="btn small" id="kRedo" hidden>手で置き直す</button>
+    <button class="btn small" id="kCancel">キャンセル</button>
+    <button class="btn small primary" id="kApply" disabled>適用</button>
+  </div>
 
   <aside class="panel right">
     <h2>計測結果</h2>
