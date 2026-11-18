@@ -201,14 +201,14 @@
     }
 
     // ---- 角度（肩甲骨・肩峰） ----
-    if (has('gl_i', 'gl_s', 'acr_l')) push('角度', 'CSA', 'CSA（critical shoulder angle）', angleAt(P('gl_i'), P('gl_s'), P('acr_l')), '°', '正常 30〜35／>35 腱板断裂、<30 OA', { ang: [P('gl_i'), P('gl_s'), P('acr_l')] });
+    if (has('gl_i', 'gl_s', 'acr_l')) push('角度', 'CSA', 'CSA（critical shoulder angle）', angleAt(P('gl_i'), P('gl_s'), P('acr_l')), '°', '文献の目安 約30〜35', { ang: [P('gl_i'), P('gl_s'), P('acr_l')] });
     // LSA・DSA（Boutsiadis 2018）：関節上結節・肩峰外側縁・大結節最外側の3点の三角形
     //   LSA = 肩峰外側縁を頂点（→関節上結節 と →大結節最外側）、DSA = 関節上結節を頂点（→肩峰外側縁 と →大結節最外側）
     if (has('gl_s', 'acr_l', 'gt_l')) {
       push('角度', 'LSA', 'LSA（lateralization）', angleAt(P('acr_l'), P('gl_s'), P('gt_l')), '°', 'RSA後 75〜95 で外旋良好', { ang: [P('acr_l'), P('gl_s'), P('gt_l')] });
       push('角度', 'DSA', 'DSA（distalization）', angleAt(P('gl_s'), P('acr_l'), P('gt_l')), '°', 'RSA後 40〜65 で挙上良好', { ang: [P('gl_s'), P('acr_l'), P('gt_l')] });
     }
-    if (has('gl_s', 'gl_i', 'scap_inf')) push('角度', 'GPA', 'GPA（glenopolar angle）', angleAt(P('gl_s'), P('gl_i'), P('scap_inf')), '°', '正常 30〜45', { ang: [P('gl_s'), P('gl_i'), P('scap_inf')] });
+    if (has('gl_s', 'gl_i', 'scap_inf')) push('角度', 'GPA', 'GPA（glenopolar angle）', angleAt(P('gl_s'), P('gl_i'), P('scap_inf')), '°', '文献の目安 約30〜45', { ang: [P('gl_s'), P('gl_i'), P('scap_inf')] });
 
     const acrLine = Array.isArray(lm.acr_under) ? fitLine(lm.acr_under) : null;
     // 置いた順に関係なく、肩峰下面の向きに沿って並べ替えて折れ線にする
@@ -216,7 +216,7 @@
     if (acrLine && gu && latDir) {
       // LAA（Banas）：関節窩面と肩峰下面のなす角。肩峰が外側で下がるほど小さい
       let a = acrLine.d; if (dot(a, latDir) < 0) a = mul(a, -1);
-      push('角度', 'LAA', 'LAA（lateral acromion angle）', 180 - deg(Math.atan2(Math.abs(cross(gu, a)), dot(gu, a))), '°', '正常 約80〜85／小さいと腱板断裂と関連',
+      push('角度', 'LAA', 'LAA（lateral acromion angle）', 180 - deg(Math.atan2(Math.abs(cross(gu, a)), dot(gu, a))), '°', '文献の目安 約80〜85',
         { lines: [[P('gl_s'), P('gl_i')], [acrPts[0], acrPts[acrPts.length - 1]]], poly: acrPts });
     }
 
@@ -233,7 +233,7 @@
       if (has('gl_i', 'gl_il')) {
         // RSA角（Boileau）：下部関節窩線と SFL 垂線のなす角。上方傾斜を +
         const g = loc(sub(P('gl_il'), P('gl_i')));
-        push('角度', 'RSAangle', 'RSA角（Boileau）', deg(Math.atan2(-g.x, g.y)), '°', '正常 約10（上方+）／術後 0 前後が目標',
+        push('角度', 'RSAangle', 'RSA角（Boileau）', deg(Math.atan2(-g.x, g.y)), '°', '文献の目安 約10（上方+）',
           { lines: [[P('gl_i'), P('gl_il')], [P('gl_i'), add(P('gl_i'), ey)]], pts: [P('gl_i'), P('gl_il')] });
       }
     }
@@ -267,10 +267,10 @@
       push('上腕骨', 'neck_w', '解剖頚の幅', L(dist(P('neck_s'), P('neck_i'))), unit, '', { segs: [[P('neck_s'), P('neck_i')]] });
       if (head) {
         const hh = dot(sub(head.c, nm), h) + head.r;
-        push('上腕骨', 'head_h', '骨頭の高さ（解剖頚から）', L(hh), unit, '正常 約15〜20mm', { segs: [[nm, add(nm, mul(h, hh))], [P('neck_s'), P('neck_i')]], circles: [head] });
+        push('上腕骨', 'head_h', '骨頭の高さ（解剖頚から）', L(hh), unit, '文献の目安 約15〜20mm', { segs: [[nm, add(nm, mul(h, hh))], [P('neck_s'), P('neck_i')]], circles: [head] });
       }
       if (shaft) {
-        push('上腕骨', 'NSA', '頚体角（neck-shaft angle）', deg(Math.atan2(Math.abs(cross(h, shaft.dd)), dot(h, shaft.dd))), '°', '正常 130〜140',
+        push('上腕骨', 'NSA', '頚体角（neck-shaft angle）', deg(Math.atan2(Math.abs(cross(h, shaft.dd)), dot(h, shaft.dd))), '°', '文献の目安 約130〜140',
           { lines: [[nm, add(nm, h)], [shaft.c, add(shaft.c, shaft.d)]] });
       }
     }
@@ -279,7 +279,7 @@
       const axis = [shaft.c, add(shaft.c, shaft.d)];
       push('上腕骨', 'shaft_w', '骨幹の幅（平均）', L(shaft.widths.reduce((s, v) => s + v, 0) / shaft.widths.length), unit, '', { segs: pairs });
       if (shaft.mids.length >= 3) push('品質', 'shaft_rms', '骨軸 当てはめ誤差', L(shaft.rms), unit, '中点が一直線か', { lines: [axis], pts: shaft.mids });
-      if (head) push('上腕骨', 'head_moff', '骨頭中心の内方オフセット（骨軸から）', L(-latFromShaft(head.c)), unit, '正常 約5〜9mm（内側+）',
+      if (head) push('上腕骨', 'head_moff', '骨頭中心の内方オフセット（骨軸から）', L(-latFromShaft(head.c)), unit, '文献の目安 約5〜9mm（内側+）',
         { lines: [axis], segs: [[head.c, foot(head.c, shaft.c, shaft.d)]], pts: [head.c] });
       if (P('gt_l')) push('上腕骨', 'gt_off', '大結節の外方オフセット（骨軸から）', L(latFromShaft(P('gt_l'))), unit, '',
         { lines: [axis], segs: [[P('gt_l'), foot(P('gt_l'), shaft.c, shaft.d)]] });
@@ -295,13 +295,13 @@
     // ---- 距離 ----
     if (acrLine && head) {
       const q = closestOnPolyline(head.c, acrPts), hp = add(head.c, mul(norm(sub(q, head.c)), head.r));
-      push('距離', 'AHI', 'AHI（骨頭円−肩峰下面 最短）', L(dist(head.c, q) - head.r), unit, '正常 7〜14／<7 腱板断裂を疑う',
+      push('距離', 'AHI', 'AHI（骨頭円−肩峰下面 最短）', L(dist(head.c, q) - head.r), unit, '文献の目安 約7〜14',
         { segs: [[hp, q]], circles: [head], poly: acrPts });
     }
     if (gn && P('acr_l') && P('gt_l')) {
       // 肩峰指数（Nyffeler）：関節窩面→肩峰外側端 ÷ 関節窩面→上腕骨外側
       const GA = Math.abs(dot(sub(P('acr_l'), glc), gn)), GH = Math.abs(dot(sub(P('gt_l'), glc), gn));
-      push('距離', 'AI', '肩峰指数（acromion index）', GA / GH, '', '正常 約0.65／>0.73 腱板断裂と関連',
+      push('距離', 'AI', '肩峰指数（acromion index）', GA / GH, '', '文献の目安 約0.65',
         { lines: [[P('gl_s'), P('gl_i')]], segs: [[P('acr_l'), foot(P('acr_l'), glc, gu)], [P('gt_l'), foot(P('gt_l'), glc, gu)]] });
     }
     if (has('acr_l', 'delt')) push('距離', 'acr_delt', '肩峰外側端−三角筋粗面', L(dist(P('acr_l'), P('delt'))), unit, '腕の長さの指標（術前後で比較）', { segs: [[P('acr_l'), P('delt')]] });
