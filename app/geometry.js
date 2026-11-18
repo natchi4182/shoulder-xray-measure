@@ -205,8 +205,8 @@
     // LSA・DSA（Boutsiadis 2018）：関節上結節・肩峰外側縁・大結節最外側の3点の三角形
     //   LSA = 肩峰外側縁を頂点（→関節上結節 と →大結節最外側）、DSA = 関節上結節を頂点（→肩峰外側縁 と →大結節最外側）
     if (has('gl_s', 'acr_l', 'gt_l')) {
-      push('角度', 'LSA', 'LSA（lateralization）', angleAt(P('acr_l'), P('gl_s'), P('gt_l')), '°', 'RSA後 75〜95 で外旋良好', { ang: [P('acr_l'), P('gl_s'), P('gt_l')] });
-      push('角度', 'DSA', 'DSA（distalization）', angleAt(P('gl_s'), P('acr_l'), P('gt_l')), '°', 'RSA後 40〜65 で挙上良好', { ang: [P('gl_s'), P('acr_l'), P('gt_l')] });
+      push('角度', 'LSA', 'LSA（lateralization）', angleAt(P('acr_l'), P('gl_s'), P('gt_l')), '°', '文献の目安（RSA 後）約75〜95', { ang: [P('acr_l'), P('gl_s'), P('gt_l')] });
+      push('角度', 'DSA', 'DSA（distalization）', angleAt(P('gl_s'), P('acr_l'), P('gt_l')), '°', '文献の目安（RSA 後）約40〜65', { ang: [P('gl_s'), P('acr_l'), P('gt_l')] });
     }
     if (has('gl_s', 'gl_i', 'scap_inf')) push('角度', 'GPA', 'GPA（glenopolar angle）', angleAt(P('gl_s'), P('gl_i'), P('scap_inf')), '°', '文献の目安 約30〜45', { ang: [P('gl_s'), P('gl_i'), P('scap_inf')] });
 
