@@ -18,8 +18,8 @@
     { id: 'head', group: '上腕骨頭', kind: 'circle', label: '骨頭 輪郭（円）', hint: '骨頭の関節面輪郭を3点以上（広く散らす）' },
     { id: 'neck_s', group: '上腕骨頭', kind: 'pt', label: '解剖頚 上端', hint: '関節面と大結節の境目' },
     { id: 'neck_i', group: '上腕骨頭', kind: 'pt', label: '解剖頚 下端', hint: '関節面と内側 calcar の境目' },
-    { id: 'gt_l', group: '上腕骨', kind: 'pt', label: '大結節 最外側点', hint: '大結節外側面の最も外側の点。LSA・DSA・肩峰指数・回転中心からの距離に使う' },
-    { id: 'gt_s', group: '上腕骨', kind: 'pt', label: '大結節 頂部', hint: '大結節の最も頭側の点。上腕骨側の下方化（回転中心から骨軸方向に何 mm 下か）と HHH（骨頭頂部との高さの差）に使う' },
+    { id: 'gt_l', group: '上腕骨', kind: 'pt', label: '大結節 最外側点', hint: '大結節外側面の最も外側の点。LSA・肩峰指数・回転中心からの距離に使う' },
+    { id: 'gt_s', group: '上腕骨', kind: 'pt', label: '大結節 頂部', hint: '大結節の最も頭側の点。DSA、上腕骨側の下方化（回転中心から骨軸方向に何 mm 下か）と HHH（骨頭頂部との高さの差）に使う' },
     { id: 'shaft', group: '上腕骨', kind: 'pairs', label: '骨幹 皮質（骨軸）', hint: '同じ高さで外側皮質→内側皮質を1組。近位と遠位で2組以上（外科頚より遠位）' },
     { id: 'delt', group: '上腕骨', kind: 'pt', label: '三角筋粗面 遠位端', hint: '三角筋粗面の最も遠位（末梢）の端。外側皮質の隆起が骨幹の輪郭に戻るところ。腕の長さ（肩峰外側端からの距離）用、写っていなければ空欄' },
     { id: 'sphere', group: 'インプラント', kind: 'circle', label: 'Glenosphere 輪郭（円）', hint: 'RSA術後：glenosphere の外縁を3点以上', cats: ['RSA'] },
@@ -43,6 +43,10 @@
     const p = sub(a, v), q = sub(b, v);
     return deg(Math.atan2(Math.abs(cross(p, q)), dot(p, q)));
   }
+
+  // DSA（Boutsiadis 2018）：関節上結節を頂点に、肩峰外側縁と大結節の最上端（頂部 gt_s）へ向かう線のなす角
+  //   P(id) は点を返す関数。保存済みの症例の値を計算し直すときにも使う
+  function dsaOf(P) { return angleAt(P('gl_s'), P('acr_l'), P('gt_s')); }
 
   // 2直線（各2点）の交点。ほぼ平行なら null
   function intersect(p1, p2, q1, q2) {
@@ -202,12 +206,13 @@
 
     // ---- 角度（肩甲骨・肩峰） ----
     if (has('gl_i', 'gl_s', 'acr_l')) push('角度', 'CSA', 'CSA（critical shoulder angle）', angleAt(P('gl_i'), P('gl_s'), P('acr_l')), '°', '文献の目安 約30〜35', { ang: [P('gl_i'), P('gl_s'), P('acr_l')] });
-    // LSA・DSA（Boutsiadis 2018）：関節上結節・肩峰外側縁・大結節最外側の3点の三角形
-    //   LSA = 肩峰外側縁を頂点（→関節上結節 と →大結節最外側）、DSA = 関節上結節を頂点（→肩峰外側縁 と →大結節最外側）
-    if (has('gl_s', 'acr_l', 'gt_l')) {
+    // LSA・DSA（Boutsiadis 2018）
+    //   LSA = 肩峰外側縁を頂点（→関節上結節 と →大結節の最外側点）
+    //   DSA = 関節上結節を頂点（→肩峰外側縁 と →大結節の最上端＝頂部）。大結節の点は LSA と DSA で別
+    if (has('gl_s', 'acr_l', 'gt_l'))
       push('角度', 'LSA', 'LSA（lateralization）', angleAt(P('acr_l'), P('gl_s'), P('gt_l')), '°', '文献の目安（RSA 後）約75〜95', { ang: [P('acr_l'), P('gl_s'), P('gt_l')] });
-      push('角度', 'DSA', 'DSA（distalization）', angleAt(P('gl_s'), P('acr_l'), P('gt_l')), '°', '文献の目安（RSA 後）約40〜65', { ang: [P('gl_s'), P('acr_l'), P('gt_l')] });
-    }
+    if (has('gl_s', 'acr_l', 'gt_s'))
+      push('角度', 'DSA', 'DSA（distalization）', dsaOf(P), '°', '文献の目安（RSA 後）約40〜65', { ang: [P('gl_s'), P('acr_l'), P('gt_s')] });
     if (has('gl_s', 'gl_i', 'scap_inf')) push('角度', 'GPA', 'GPA（glenopolar angle）', angleAt(P('gl_s'), P('gl_i'), P('scap_inf')), '°', '文献の目安 約30〜45', { ang: [P('gl_s'), P('gl_i'), P('scap_inf')] });
 
     const acrLine = Array.isArray(lm.acr_under) ? fitLine(lm.acr_under) : null;
@@ -476,5 +481,5 @@
     return { results: r, ex, ey, frame, altFrame, pillar, head, sphere, shaft, headAxis, acrLine, acrPts, refGl, refHead, asRef, mmpx, calNote, unit };
   }
 
-  global.XG = { LANDMARKS, compute, fitCircle, fitLine, distToPolyline, intersect, angleAt, makeFrame, dist };
+  global.XG = { LANDMARKS, compute, fitCircle, fitLine, distToPolyline, intersect, angleAt, dsaOf, makeFrame, dist };
 })(window);

@@ -32,6 +32,15 @@
   const lmDef = (id) => LM.find((l) => l.id === id);
 
   // ---- IndexedDB ----
+  // 1.0(20) までは DSA に大結節の最外側点を使っていた。保存済みの症例は、置いた点から原著どおり（大結節頂部）に計算し直す。
+  // 頂部の点が無い症例は DSA を出さない（古い値は残さない）
+  function fixDsa(r) {
+    if (!r || !r.results || r.results.DSA == null) return r;
+    const L = r.landmarks || {}, P = (id) => (L[id] && !Array.isArray(L[id]) ? L[id] : null);
+    const results = { ...r.results };
+    if (P('gl_s') && P('acr_l') && P('gt_s')) results.DSA = +XG.dsaOf(P).toFixed(3); else delete results.DSA;
+    return { ...r, results };
+  }
   const DB = {
     db: null,
     open() {
@@ -48,7 +57,7 @@
     all() { return new Promise((res, rej) => { const q = this.tx('readonly').getAll(); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); },
     del(key) { return new Promise((res, rej) => { const q = this.tx('readwrite').delete(key); q.onsuccess = () => res(); q.onerror = () => rej(q.error); }); },
     // 削除した症例は「削除済み」の印（tombstone）として残し、iCloud でほかの端末にも削除を伝える
-    async live() { return (await this.all()).filter((r) => !r.deleted); },
+    async live() { return (await this.all()).filter((r) => !r.deleted).map(fixDsa); },
   };
   const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
     const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16);
@@ -368,7 +377,7 @@
       if ($('optAngles').checked) {
         const seg = (a, b, c) => { if (P(a) && P(b)) line(g, T(P(a)), T(P(b)), c, 1.2 * z); };
         seg('gl_i', 'gl_s', COL.glen); seg('gl_i', 'acr_l', COL.acr + 'cc');
-        seg('gl_s', 'acr_l', COL.acr + '88'); seg('gl_s', 'gt_l', COL.hum + 'aa'); seg('acr_l', 'gt_l', COL.hum + '77');
+        seg('gl_s', 'acr_l', COL.acr + '88'); seg('gl_s', 'gt_s', COL.hum + 'aa'); seg('acr_l', 'gt_l', COL.hum + '77');
         seg('gl_s', 'scap_inf', COL.scap + 'aa'); seg('gl_i', 'gl_il', COL.glen + 'ff');
       }
       for (const [key, col] of [['head', COL.hum], ['sphere', COL.imp]]) {
